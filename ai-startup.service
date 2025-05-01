@@ -1,0 +1,15 @@
+[Unit]
+Description=AI Startup Self-Improvement System
+After=network.target
+
+[Service]
+Type=simple
+User=ai-startup
+WorkingDirectory=/opt/ai-startup
+Environment="PATH=/opt/ai-startup/venv/bin"
+ExecStart=/opt/ai-startup/venv/bin/python src/main.py
+Restart=always
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target 

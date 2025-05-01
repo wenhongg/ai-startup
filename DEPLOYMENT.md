@@ -1,209 +1,144 @@
 # Deployment Guide
 
-This guide explains how to deploy the AI Self-Improvement System with daily improvement cycles.
+This guide provides detailed instructions for deploying the AI Startup Self-Improvement System in a production environment.
 
 ## Prerequisites
 
-- Python 3.8+
+- Linux server (Ubuntu 20.04 or later recommended)
+- Python 3.8 or later
 - Git
-- OpenAI API key
-- GitHub repository access
-- Server/VM with cron or similar scheduling capability
+- Systemd (for service management)
+- Cron (for scheduling)
 
-## Setup Steps
+## Server Setup
 
-1. **Clone the Repository**
+1. Create a dedicated user:
    ```bash
-   git clone <repository-url>
-   cd ai-startup
+   sudo useradd -m -s /bin/bash ai-startup
+   sudo usermod -aG sudo ai-startup
    ```
 
-2. **Create Virtual Environment**
+2. Set up the application directory:
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   sudo mkdir -p /opt/ai-startup
+   sudo chown ai-startup:ai-startup /opt/ai-startup
    ```
 
-3. **Install Dependencies**
+## Deployment Steps
+
+1. Clone the repository:
    ```bash
-   pip install -r requirements.txt
+   sudo -u ai-startup git clone https://github.com/yourusername/ai-startup.git /opt/ai-startup
    ```
 
-4. **Configure Environment Variables**
-   Create a `.env` file:
+2. Set up the virtual environment:
    ```bash
-   OPENAI_API_KEY=your_api_key_here
-   GITHUB_TOKEN=your_github_token_here
-   ENVIRONMENT=production
-   LOG_LEVEL=INFO
+   cd /opt/ai-startup
+   sudo -u ai-startup python -m venv venv
+   sudo -u ai-startup ./venv/bin/pip install -r requirements.txt
    ```
 
-5. **Configure GitHub Access**
-   - Generate a GitHub Personal Access Token with `repo` scope
-   - Add the token to your `.env` file
-   - Ensure the repository is properly configured for pull requests
-
-## Setting Up Daily Improvement Cycles
-
-### Option 1: Using Cron (Linux/Mac)
-
-1. Create a script to run the improvement cycle:
+3. Configure environment variables:
    ```bash
-   #!/bin/bash
-   cd /path/to/ai-startup
-   source venv/bin/activate
-   python -c "from src.orchestrator import SystemOrchestrator; import asyncio; asyncio.run(SystemOrchestrator().improvement_cycle())"
+   sudo -u ai-startup cp .env.example .env
+   sudo -u ai-startup nano .env  # Edit with your API keys
    ```
 
-2. Make the script executable:
+4. Set up the systemd service:
    ```bash
-   chmod +x run_improvement_cycle.sh
+   sudo cp ai-startup.service /etc/systemd/system/
+   sudo systemctl daemon-reload
+   sudo systemctl enable ai-startup
+   sudo systemctl start ai-startup
    ```
 
-3. Add to crontab:
+5. Configure the daily cron job:
    ```bash
-   # Run at 2 AM daily
-   0 2 * * * /path/to/run_improvement_cycle.sh >> /path/to/improvement_logs.log 2>&1
+   sudo -u ai-startup crontab -e
+   # Add this line to run daily at 2 AM
+   0 2 * * * /opt/ai-startup/venv/bin/python /opt/ai-startup/src/main.py >> /opt/ai-startup/logs/cron.log 2>&1
    ```
 
-### Option 2: Using Windows Task Scheduler
+## Directory Structure
 
-1. Create a batch script:
-   ```batch
-   @echo off
-   cd C:\path\to\ai-startup
-   call venv\Scripts\activate
-   python -c "from src.orchestrator import SystemOrchestrator; import asyncio; asyncio.run(SystemOrchestrator().improvement_cycle())"
-   ```
+```
+/opt/ai-startup/
+├── src/              # Source code
+├── venv/             # Virtual environment
+├── logs/             # Application logs
+├── backups/          # System backups
+├── .env              # Environment variables
+└── requirements.txt  # Python dependencies
+```
 
-2. Create a scheduled task:
-   - Open Task Scheduler
-   - Create Basic Task
-   - Set trigger to daily at 2 AM
-   - Action: Start a program
-   - Program: `C:\path\to\run_improvement_cycle.bat`
+## Logging and Monitoring
 
-### Option 3: Using Docker
-
-1. Create a Dockerfile:
-   ```dockerfile
-   FROM python:3.8-slim
-
-   WORKDIR /app
-   COPY . .
-   RUN pip install -r requirements.txt
-
-   CMD ["python", "-c", "from src.orchestrator import SystemOrchestrator; import asyncio; asyncio.run(SystemOrchestrator().improvement_cycle())"]
-   ```
-
-2. Build and run with cron:
+1. Check systemd service status:
    ```bash
-   docker build -t ai-improvement .
-   docker run -d \
-     --env-file .env \
-     -v /path/to/logs:/app/logs \
-     ai-improvement
+   sudo systemctl status ai-startup
    ```
 
-## Monitoring and Maintenance
+2. View application logs:
+   ```bash
+   sudo -u ai-startup tail -f /opt/ai-startup/logs/app.log
+   ```
 
-1. **Logs**
-   - System logs are stored in `logs/` directory
-   - Each improvement cycle creates a detailed log entry
-   - Pull request history is maintained in GitHub
+3. View cron logs:
+   ```bash
+   sudo -u ai-startup tail -f /opt/ai-startup/logs/cron.log
+   ```
 
-2. **Alerting**
-   - Set up monitoring for:
-     - Failed improvement cycles
-     - Pull request creation failures
-     - Safety check violations
-     - API quota limits
+## Backup and Restore
 
-3. **Backup**
-   - Regular backups of:
-     - Repository state
-     - Configuration files
-     - Log files
-     - Environment variables
+1. Backups are automatically created in `/opt/ai-startup/backups/`
+2. Each backup is timestamped
+3. The system maintains the last 7 days of backups
 
 ## Security Considerations
 
-1. **API Keys**
-   - Store API keys securely
-   - Use environment variables
-   - Rotate keys regularly
-   - Limit key permissions
-
-2. **Repository Access**
-   - Use least-privilege principle
-   - Limit write access to necessary files
-   - Monitor pull request activity
-   - Review all changes before merging
-
-3. **System Access**
-   - Secure the deployment server
-   - Regular security updates
-   - Monitor system resources
-   - Set up firewall rules
+1. The `ai-startup` user should have minimal permissions
+2. API keys should be stored securely in `.env`
+3. Regular security updates should be applied
+4. Monitor rate limits and API usage
 
 ## Troubleshooting
 
-1. **Common Issues**
-   - API quota exceeded
-   - GitHub rate limits
-   - Permission issues
-   - Environment configuration problems
+1. Check service status:
+   ```bash
+   sudo systemctl status ai-startup
+   ```
 
-2. **Debugging**
-   - Check logs in `logs/` directory
-   - Review GitHub pull request history
-   - Verify environment variables
-   - Test API connectivity
+2. View service logs:
+   ```bash
+   sudo journalctl -u ai-startup
+   ```
 
-3. **Recovery**
-   - Restore from backup if needed
-   - Reset environment variables
-   - Clear temporary files
-   - Restart the service
+3. Check cron job:
+   ```bash
+   sudo -u ai-startup crontab -l
+   ```
 
-## Scaling Considerations
+4. Verify API keys:
+   ```bash
+   sudo -u ai-startup cat /opt/ai-startup/.env
+   ```
 
-1. **Resource Usage**
-   - Monitor CPU and memory usage
-   - Adjust scheduling based on load
-   - Consider parallel processing
-   - Optimize API calls
+## Updates
 
-2. **Rate Limits**
-   - Implement rate limiting
-   - Queue improvement cycles
-   - Handle API errors gracefully
-   - Implement retry logic
+To update the system:
 
-3. **Storage**
-   - Monitor log file growth
-   - Implement log rotation
-   - Clean up old backups
-   - Archive completed cycles
+1. Pull the latest changes:
+   ```bash
+   cd /opt/ai-startup
+   sudo -u ai-startup git pull
+   ```
 
-## Best Practices
+2. Update dependencies:
+   ```bash
+   sudo -u ai-startup ./venv/bin/pip install -r requirements.txt
+   ```
 
-1. **Regular Maintenance**
-   - Review pull requests daily
-   - Monitor system performance
-   - Update dependencies
-   - Clean up old branches
-
-2. **Documentation**
-   - Keep README_ai.md updated
-   - Document significant changes
-   - Maintain deployment notes
-   - Track known issues
-
-3. **Testing**
-   - Test in staging environment
-   - Verify safety checks
-   - Monitor improvement quality
-   - Validate pull requests
-
-Remember: While the system runs automatically, human oversight is crucial. Regular review of pull requests and system performance is essential for maintaining system integrity and quality. 
+3. Restart the service:
+   ```bash
+   sudo systemctl restart ai-startup
+   ``` 

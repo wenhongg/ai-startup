@@ -1,9 +1,67 @@
-# AI Self-Improvement System
+# AI Startup Self-Improvement System
 
-This project implements an AI system that can analyze and improve its own codebase. The system consists of two AI agents:
+An autonomous system that continuously improves its own codebase using AI agents.
 
-1. **Founder AI**: Analyzes the system and proposes improvements
-2. **Developer AI**: Reviews proposals and implements changes
+## Features
+
+- Autonomous code analysis and improvement
+- Safety checks and validation
+- Pull request-based changes
+- Rate limiting for API calls
+- Comprehensive logging and observability
+
+## Development Setup
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/ai-startup.git
+   cd ai-startup
+   ```
+
+2. Run the setup script:
+   ```bash
+   chmod +x setup.sh
+   ./setup.sh
+   ```
+
+3. Update your `.env` file with API keys:
+   ```
+   OPENAI_API_KEY=your_openai_api_key
+   GITHUB_TOKEN=your_github_token
+   ```
+
+4. Activate the virtual environment:
+   ```bash
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+5. Run the development server:
+   ```bash
+   python src/main.py
+   ```
+
+## Production Deployment
+
+1. Clone the repository to your server:
+   ```bash
+   git clone https://github.com/yourusername/ai-startup.git
+   cd ai-startup
+   ```
+
+2. Run the deployment script:
+   ```bash
+   chmod +x deploy.sh
+   ./deploy.sh
+   ```
+
+3. Set up the daily cron job:
+   ```bash
+   # Edit crontab
+   crontab -e
+   
+   # Add this line to run daily at 2 AM
+   0 2 * * * /opt/ai-startup/venv/bin/python /opt/ai-startup/src/main.py >> /opt/ai-startup/logs/cron.log 2>&1
+   ```
 
 ## Project Structure
 
@@ -11,102 +69,44 @@ This project implements an AI system that can analyze and improve its own codeba
 ai-startup/
 ├── src/
 │   ├── agents/
-│   │   ├── __init__.py
 │   │   ├── base.py
 │   │   ├── founder.py
-│   │   └── developer.py
+│   │   ├── developer.py
+│   │   └── __init__.py
 │   ├── code_manager.py
-│   ├── config.py
-│   ├── orchestrator.py
-│   └── safety_checker.py
-├── prompts/
-│   ├── founder.txt
-│   └── developer.txt
+│   ├── safety_checker.py
+│   ├── rate_limits.py
+│   ├── observability.py
+│   └── orchestrator.py
+├── logs/
+├── backups/
 ├── requirements.txt
-└── README.md
+├── setup.sh
+├── deploy.sh
+├── ai-startup.service
+└── .env
 ```
 
-## Key Components
+## Configuration
 
-### Agents
-- `src/agents/base.py`: Base class for AI agents with common functionality
-- `src/agents/founder.py`: Founder AI implementation
-- `src/agents/developer.py`: Developer AI implementation
+- Rate limits are configured in `src/rate_limits.py`
+- API keys are stored in `.env`
+- Logs are stored in `logs/` directory
+- Backups are stored in `backups/` directory
 
-### Core System
-- `src/code_manager.py`: Manages code changes and pull requests
-- `src/safety_checker.py`: Validates changes and ensures system safety
-- `src/orchestrator.py`: Coordinates the improvement cycle
+## Monitoring
 
-### Configuration
-- `src/config.py`: System configuration and settings
-- `prompts/`: Directory containing AI agent prompts
-
-## Workflow
-
-1. **Analysis**: Founder AI analyzes the system
-2. **Proposal**: Founder AI generates improvement proposals
-3. **Review**: Developer AI reviews and plans implementation
-4. **Safety Check**: System validates proposed changes
-5. **Implementation**: Developer AI implements changes
-6. **Pull Request**: Changes are submitted as pull requests for review
-
-## Safety Features
-
-- Protected files and patterns
-- Syntax validation
-- Dangerous operation detection
-- Backup and restore functionality
-- Multiple safety checks before implementation
-
-## Getting Started
-
-1. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. Configure the system in `src/config.py`
-
-3. Run the improvement cycle:
-   ```python
-   from src.orchestrator import SystemOrchestrator
-   
-   orchestrator = SystemOrchestrator()
-   result = await orchestrator.improvement_cycle()
-   ```
-
-## Safety Checks
-
-The system includes multiple safety checks:
-
-1. **Protected Files**: Core system files that must not be modified
-2. **Protected Patterns**: Critical code patterns that must be preserved
-3. **Syntax Validation**: Ensures all changes are valid Python code
-4. **Dangerous Operations**: Prevents unsafe operations like:
-   - Direct file system access
-   - Network operations
-   - System commands
-   - Dynamic code execution
+- Check logs in `logs/` directory
+- Monitor GitHub repository for pull requests
+- Review observability logs for system improvements
 
 ## Contributing
 
-All changes must go through the pull request process, where:
-1. The AI system proposes changes
-2. Changes are validated by the safety checker
-3. Pull requests are created for manual review
-4. Changes are only merged after approval
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
 ## License
 
 MIT License 
-
-## Logs
-
-```
-logs/
-├── proposal_20240315.txt
-├── implementation_plan_20240315.txt
-├── proposal_20240316.txt
-└── implementation_plan_20240316.txt
-``` 
