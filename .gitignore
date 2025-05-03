@@ -22,36 +22,37 @@ wheels/
 
 # Virtual Environment
 venv/
-env/
 ENV/
-.env
-.venv
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
-.DS_Store
 
-# Project specific
-backups/
+# Logs
 logs/
 *.log
+
+# Environment variables
 .env
-.env.local
-.env.*.local
+
+# Database
+*.db
+*.sqlite3
+
+# Backups
+backups/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Test cache
+.pytest_cache/
 
 # OpenAI API key
 openai_api_key.txt
 
-# GitHub token
-github_token.txt
-
 # Rate limit tracking
-rate_limit_state.json
-
-# Test coverage
-.coverage
-htmlcov/
-.pytest_cache/ 
+rate_limit_state.json 

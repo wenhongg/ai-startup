@@ -1,9 +1,16 @@
+"""
+Main entry point for the AI Startup Self-Improvement System.
+"""
+
+import asyncio
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import uvicorn
-from .orchestrator import SystemOrchestrator
-from .config import settings
+from src.orchestrator import SystemOrchestrator
+from src.observability import Observability
+from src.rate_limits import rate_limiter
+from src.config import settings
 
 # Configure logging
 logging.basicConfig(
@@ -23,8 +30,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize orchestrator
-orchestrator = SystemOrchestrator()
+async def main():
+    """Run the AI startup system."""
+    try:
+        # Initialize the orchestrator
+        orchestrator = SystemOrchestrator()
+        
+        # Run improvement cycles
+        while True:
+            try:
+                # Run a single improvement cycle
+                await orchestrator.run_improvement_cycle()
+                
+                # Clean up rate limiter
+                rate_limiter.cleanup()
+                
+                # Wait before next cycle
+                await asyncio.sleep(60)  # 1 minute between cycles
+                
+            except Exception as e:
+                print(f"Error in improvement cycle: {e}")
+                await asyncio.sleep(300)  # 5 minutes before retry
+                
+    except Exception as e:
+        print(f"Fatal error: {e}")
+        raise
 
 @app.get("/")
 async def root():
@@ -53,9 +83,4 @@ async def run_improvement_cycle():
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
-    uvicorn.run(
-        "src.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True if settings.environment == "development" else False
-    ) 
+    asyncio.run(main()) 

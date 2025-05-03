@@ -1,16 +1,44 @@
-# AI Startup Self-Improvement System
+# AI Startup
 
 An autonomous system that continuously improves its own codebase using AI agents.
 
 ## Features
 
-- Autonomous code analysis and improvement
-- Safety checks and validation
-- Pull request-based changes
-- Rate limiting for API calls
-- Comprehensive logging and observability
+- **Autonomous Code Improvement**: AI agents analyze and enhance the codebase
+- **Continuous Learning**: System learns from its own improvements
+- **Self-Maintaining**: Automatically updates dependencies and documentation
+- **Real-time Monitoring**: Tracks system performance and improvements
 
-## Development Setup
+## Architecture
+
+The system consists of several key components:
+
+1. **AI Agents**:
+   - Founder Agent: Strategic planning and high-level improvements
+   - Developer Agent: Code implementation and technical improvements
+
+2. **Core Components**:
+   - System Orchestrator: Coordinates the improvement cycle
+   - Code Manager: Handles code changes and version control
+   - Rate Limiter: Manages API usage and resource allocation
+   - Observability: Monitors system performance and improvements
+
+3. **Infrastructure**:
+   - FastAPI backend
+   - SQLite database
+   - GitHub integration
+   - Gemini API for AI capabilities
+
+## Development
+
+### Prerequisites
+
+- Python 3.8 or higher
+- Git
+- A GitHub account
+- A Gemini API key (get it from [Google AI Studio](https://makersuite.google.com/app/apikey))
+
+### Local Setup
 
 1. Clone the repository:
    ```bash
@@ -18,87 +46,118 @@ An autonomous system that continuously improves its own codebase using AI agents
    cd ai-startup
    ```
 
-2. Run the setup script:
+2. Create and activate a virtual environment:
    ```bash
-   chmod +x setup.sh
-   ./setup.sh
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-3. Update your `.env` file with API keys:
-   ```
-   OPENAI_API_KEY=your_openai_api_key
-   GITHUB_TOKEN=your_github_token
+3. Install the package in development mode:
+   ```bash
+   # Install with all dependencies including development tools
+   pip install -e ".[dev]"
    ```
 
-4. Activate the virtual environment:
+4. Create a `.env` file with your API keys:
+   ```bash
+   # Get your API key from https://makersuite.google.com/app/apikey
+   GEMINI_API_KEY=your_key_here
+   GITHUB_TOKEN=your_token_here
+   ```
+
+### Running the Application
+
+1. Make sure you're in the virtual environment (you should see `(venv)` in your prompt)
+
+2. Start the development server:
+   ```bash
+   python -m src.main
+   ```
+
+3. The server will be available at `http://localhost:8000`
+
+### Testing
+
+1. Make sure you're in the virtual environment and the package is installed in development mode
+
+2. Run all tests:
+   ```bash
+   pytest
+   ```
+
+3. Run tests with coverage:
+   ```bash
+   pytest --cov=src
+   ```
+
+4. Run specific test file:
+   ```bash
+   pytest tests/test_repo_reader.py
+   ```
+
+### Development Workflow
+
+1. Make your changes in the `src` directory
+2. Run tests to ensure everything works
+3. Commit your changes
+4. The system will automatically analyze and improve the codebase
+
+### Code Quality
+
+The project uses several tools to maintain code quality:
+
+1. **Black**: Code formatting
+   ```bash
+   black src tests
+   ```
+
+2. **isort**: Import sorting
+   ```bash
+   isort src tests
+   ```
+
+3. **flake8**: Linting
+   ```bash
+   flake8 src tests
+   ```
+
+4. **mypy**: Type checking
+   ```bash
+   mypy src
+   ```
+
+### Troubleshooting
+
+#### ModuleNotFoundError: No module named 'ai_startup'
+
+This error occurs when the package isn't installed in development mode. To fix:
+
+1. Make sure you're in the virtual environment:
    ```bash
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-5. Run the development server:
+2. Install the package in development mode:
    ```bash
-   python src/main.py
+   pip install -e ".[dev]"
    ```
 
-## Production Deployment
-
-1. Clone the repository to your server:
+3. Verify the installation:
    ```bash
-   git clone https://github.com/yourusername/ai-startup.git
-   cd ai-startup
+   pip list | grep ai-startup
    ```
 
-2. Run the deployment script:
-   ```bash
-   chmod +x deploy.sh
-   ./deploy.sh
-   ```
+#### Other Common Issues
 
-3. Set up the daily cron job:
-   ```bash
-   # Edit crontab
-   crontab -e
-   
-   # Add this line to run daily at 2 AM
-   0 2 * * * /opt/ai-startup/venv/bin/python /opt/ai-startup/src/main.py >> /opt/ai-startup/logs/cron.log 2>&1
-   ```
+- **Package not found**: Make sure you're in the correct directory and the virtual environment is activated
 
-## Project Structure
+- **API errors**: Check your `.env` file and make sure your API keys are correct
 
-```
-ai-startup/
-├── src/
-│   ├── agents/
-│   │   ├── base.py
-│   │   ├── founder.py
-│   │   ├── developer.py
-│   │   └── __init__.py
-│   ├── code_manager.py
-│   ├── safety_checker.py
-│   ├── rate_limits.py
-│   ├── observability.py
-│   └── orchestrator.py
-├── logs/
-├── backups/
-├── requirements.txt
-├── setup.sh
-├── deploy.sh
-├── ai-startup.service
-└── .env
-```
+## API Documentation
 
-## Configuration
-
-- Rate limits are configured in `src/rate_limits.py`
-- API keys are stored in `.env`
-- Logs are stored in `logs/` directory
-- Backups are stored in `backups/` directory
-
-## Monitoring
-
-- Check logs in `logs/` directory
-- Monitor GitHub repository for pull requests
-- Review observability logs for system improvements
+Once the server is running, visit:
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
 
 ## Contributing
 
@@ -109,4 +168,4 @@ ai-startup/
 
 ## License
 
-MIT License 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 

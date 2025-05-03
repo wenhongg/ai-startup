@@ -1,3 +1,7 @@
+"""
+Manages code changes and version control operations.
+"""
+
 import git
 import os
 import logging
@@ -8,11 +12,15 @@ from .observability import Observability
 import asyncio
 from git import Repo
 from github import Github
-from src.rate_limits import RateLimiter
+from .rate_limits import RateLimiter
+from .config import settings
 import time
 
 class CodeManager:
+    """Handles code changes and version control operations."""
+    
     def __init__(self, repo_path: str = "."):
+        """Initialize the code manager."""
         self.logger = logging.getLogger(__name__)
         self.repo_path = repo_path
         self.repo = Repo(repo_path)
@@ -100,4 +108,14 @@ class CodeManager:
             self.logger.info(f"Restored backup from {latest_backup}")
             
         except Exception as e:
-            self.logger.error(f"Error restoring backup: {str(e)}") 
+            self.logger.error(f"Error restoring backup: {str(e)}")
+
+    async def get_current_state(self) -> Dict[str, Any]:
+        """Get the current state of the codebase."""
+        # This would be implemented to get the current code state
+        return {}
+    
+    async def apply_changes(self, changes: Dict[str, Any], title: str, description: str) -> None:
+        """Apply changes to the codebase."""
+        # This would be implemented to apply the changes
+        pass 

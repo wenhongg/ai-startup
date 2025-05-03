@@ -1,0 +1,15 @@
+Please analyze and summarize the following code file:
+File: {file_path}
+
+Code:
+{content}
+
+Provide a concise summary (no more than 7 sentences) that includes:
+1. Main purpose and functionality
+2. Key components and their relationships
+3. Important functions/classes and their roles
+4. Dependencies and import patterns
+5. Notable design decisions
+6. Potential areas for improvement
+
+Format the response as a structured summary with clear sections. 

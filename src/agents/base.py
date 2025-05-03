@@ -1,63 +1,114 @@
-from openai import AsyncOpenAI
-from typing import Dict, Any, Optional
+"""
+Base class for AI agents in the system.
+"""
+
+import google.generativeai as genai
+from typing import Optional, Dict, Any
 import os
 from ..config import settings
-import logging
-from src.rate_limits import RateLimiter
 
 class BaseAgent:
-    def __init__(self, model: str = "gpt-4-turbo-preview"):
-        self.logger = logging.getLogger(__name__)
-        self.client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        self.model = model
-        self.rate_limiter = RateLimiter()
-        self.system_prompt = ""
-        self.settings = settings
+    """Base class for all AI agents in the system."""
     
-    def _load_prompt(self, prompt_file: str) -> str:
-        """Load a prompt from a text file"""
-        prompt_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "prompts", prompt_file)
+    def __init__(self, model_name: str = "gemini-1.5-pro-002"):
+        """Initialize the base agent with a specific model."""
+        # Configure the Gemini API
+        genai.configure(api_key=settings.gemini_api_key)
+        
+        # Initialize the model
+        self.model = genai.GenerativeModel(model_name)
+        self.system_prompt = None
+        
+    def _load_prompt(self, filename: str) -> str:
+        """
+        Load a prompt from a file in the prompts directory.
+        
+        Args:
+            filename: Name of the prompt file
+            
+        Returns:
+            The prompt text
+        """
+        prompt_path = os.path.join(os.path.dirname(__file__), "..", "prompts", filename)
         try:
-            with open(prompt_path, 'r') as f:
+            with open(prompt_path, "r") as f:
                 return f.read().strip()
         except Exception as e:
-            raise Exception(f"Failed to load prompt from {prompt_file}: {str(e)}")
-    
-    async def _generate_response(self, prompt: str, max_tokens: int = 2000) -> str:
-        """Generate a response using the OpenAI API with rate limiting"""
-        try:
-            # Wait for rate limit before making the API call
-            await self.rate_limiter.wait_for_openai(estimated_tokens=max_tokens)
-            
-            # Record the request
-            self.rate_limiter.record_openai_request(max_tokens)
-            
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=max_tokens,
-                temperature=0.7
-            )
-            
-            # Record completion
-            self.rate_limiter.record_openai_completion()
-            
-            return response.choices[0].message.content
-            
-        except Exception as e:
-            self.logger.error(f"Error generating response: {str(e)}")
-            raise
-    
-    async def generate_response(self, prompt: str, context: Dict[str, Any] = None) -> str:
-        messages = [
-            {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": self._format_prompt(prompt, context)}
-        ]
+            print(f"Error loading prompt {filename}: {e}")
+            return ""
         
-        response = await self._generate_response(self._format_prompt(prompt, context))
-        return response
+    async def generate_response(self, prompt: str, **kwargs) -> str:
+        """
+        Generate a response from the AI model.
+        
+        Args:
+            prompt: The input prompt for the model
+            **kwargs: Additional parameters for the model
+            
+        Returns:
+            The generated response text
+        """
+        try:
+            # Combine system prompt with the input prompt if system prompt exists
+            full_prompt = f"{self.system_prompt}\n\n{prompt}" if self.system_prompt else prompt
+            response = await self.model.generate_content_async(full_prompt, **kwargs)
+            return response.text
+        except Exception as e:
+            print(f"Error generating response: {e}")
+            return ""
     
-    def _format_prompt(self, prompt: str, context: Dict[str, Any] = None) -> str:
-        if not context:
-            return prompt
-        return f"{prompt}\n\nContext:\n{context}" 
+    async def analyze_code(self, code: str) -> Dict[str, Any]:
+        """Analyze code and return insights."""
+        prompt = f"""
+        Analyze the following code and provide insights:
+        {code}
+        
+        Please provide:
+        1. Code quality assessment
+        2. Potential improvements
+        3. Security considerations
+        4. Performance implications
+        """
+        
+        response = await self.generate_response(prompt)
+        return {
+            "analysis": response,
+            "code": code
+        }
+    
+    async def suggest_improvements(self, code: str) -> Dict[str, Any]:
+        """Suggest improvements for the given code."""
+        prompt = f"""
+        Suggest improvements for the following code:
+        {code}
+        
+        Please provide:
+        1. Specific improvements with explanations
+        2. Code examples for each improvement
+        3. Potential impact of changes
+        """
+        
+        response = await self.generate_response(prompt)
+        return {
+            "suggestions": response,
+            "code": code
+        }
+    
+    async def review_changes(self, changes: Dict[str, Any]) -> Dict[str, Any]:
+        """Review proposed changes."""
+        prompt = f"""
+        Review the following changes:
+        {changes}
+        
+        Please provide:
+        1. Code review comments
+        2. Potential issues
+        3. Suggestions for improvement
+        4. Overall assessment
+        """
+        
+        response = await self.generate_response(prompt)
+        return {
+            "review": response,
+            "changes": changes
+        } 
