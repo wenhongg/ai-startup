@@ -17,7 +17,7 @@ class CodeManager:
     def __init__(self):
         """Initialize the code manager."""
         self.logger = logging.getLogger(__name__)
-        self.github = Github(os.getenv("GITHUB_TOKEN"))
+        self.github = Github(settings.github_token)
         self.rate_limiter = RateLimiter()
         
         # Extract owner/repo from the full URL

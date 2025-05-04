@@ -100,6 +100,10 @@ class RateLimiter:
             self.usage["github"]["requests"].append(now)
             self.logger.info(f"Recorded GitHub request. Total requests: {len(self.usage['github']['requests'])}")
     
+    def record_completion(self, api: str):
+        """Record the completion of an API request."""
+        self.logger.info(f"Recorded {api} API request completion")
+    
     def wait_if_needed(self, api: str):
         """Wait if rate limit would be exceeded."""
         self.logger.info(f"Checking rate limits for {api}...")

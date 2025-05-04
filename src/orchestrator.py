@@ -47,6 +47,10 @@ class SystemOrchestrator:
             pr_url = self.code_manager.create_pull_request(changes, title, description)
             print(f"Created pull request: {pr_url}")
             
+            # Reset code reader caches at the end of the cycle
+            print("Resetting code reader caches...")
+            self.code_reader.reset()
+            
         except Exception as e:
             print(f"Error in improvement cycle: {e}")
             raise 

@@ -103,6 +103,16 @@ class CodeReader(BaseAgent):
             self.summarize_repository()
         return self._cached_summaries
 
+    def reset(self) -> None:
+        """
+        Reset the code reader by clearing all caches.
+        This includes:
+        - File content cache in repo_reader
+        - Cached code summaries
+        """
+        self.repo_reader.reset()
+        self._cached_summaries = None
+
     def read_file(self, file_path: str) -> str:
         """Read the contents of a file from the repository.
         

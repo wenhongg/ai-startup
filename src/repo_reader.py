@@ -30,6 +30,9 @@ class RepoReader:
         
         # Get the repository
         self.repo = self.github.get_user(self.owner).get_repo(self.repo_name)
+        
+        # Initialize cache
+        self._file_cache = {}
     
     def get_file_content(self, file_path: str) -> str:
         """
@@ -44,11 +47,20 @@ class RepoReader:
         Raises:
             Exception: If the file cannot be read or does not exist
         """
+        # Check cache first
+        if file_path in self._file_cache:
+            return self._file_cache[file_path]
+            
         try:
             content = self.repo.get_contents(file_path, ref=self.branch)
             if content.encoding == 'base64':
-                return base64.b64decode(content.content).decode('utf-8')
-            return content.content
+                decoded_content = base64.b64decode(content.content).decode('utf-8')
+            else:
+                decoded_content = content.content
+                
+            # Cache the result
+            self._file_cache[file_path] = decoded_content
+            return decoded_content
         except Exception as e:
             raise Exception(f"Error reading file {file_path}: {str(e)}")
 
@@ -78,4 +90,10 @@ class RepoReader:
         except Exception as e:
             raise Exception(f"Error getting files from {path}: {str(e)}")
         
-        return files 
+        return files
+        
+    def reset(self) -> None:
+        """
+        Clear all cached file contents.
+        """
+        self._file_cache.clear()

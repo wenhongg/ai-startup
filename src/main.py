@@ -65,7 +65,7 @@ async def run_improvement_cycle():
     Trigger a single improvement cycle
     """
     try:
-        result = await orchestrator.improvement_cycle()
+        result = orchestrator.improvement_cycle()
         if result:
             return {
                 "status": "success",
