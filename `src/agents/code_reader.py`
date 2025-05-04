@@ -1,0 +1,68 @@
+```python
+import os
+import json
+from typing import Dict, Any
+from .base import Agent
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+class CodeReader(Agent):
+    """
+    Agent for reading and analyzing code.
+    """
+
+    def __init__(self, config: Dict[str, Any], cycle_id: str):
+        super().__init__(cycle_id)
+        self.config = config
+        self.code_path = config.get("code_path", ".")
+
+    def read_file(self, filepath: str) -> str:
+        """
+        Reads a file and returns its content.
+        """
+        try:
+            with open(os.path.join(self.code_path, filepath), "r") as f:
+                content = f.read()
+            logger.info(f"[{self.cycle_id}] Read file: {filepath}")
+            return content
+        except FileNotFoundError:
+            logger.error(f"[{self.cycle_id}] File not found: {filepath}")
+            raise
+        except Exception as e:
+            logger.error(f"[{self.cycle_id}] Error reading file: {filepath} - {e}")
+            raise
+
+    def analyze_code(self, filepath: str) -> Dict[str, Any]:
+        """
+        Analyzes the code in a given file.  This is a placeholder and should be
+        implemented with more sophisticated analysis.
+        """
+        try:
+            content = self.read_file(filepath)
+            # Placeholder for code analysis.  In a real implementation, this
+            # would use a code parsing library (e.g., ast) or a language
+            # server to analyze the code.
+            analysis = {
+                "filepath": filepath,
+                "line_count": content.count('\n') + 1,
+                "character_count": len(content),
+            }
+            logger.info(f"[{self.cycle_id}] Analyzed code: {filepath}")
+            return analysis
+        except Exception as e:
+            logger.error(f"[{self.cycle_id}] Error analyzing code: {filepath} - {e}")
+            raise
+
+    def get_file_list(self) -> list[str]:
+        """
+        Returns a list of all files in the configured code path.
+        """
+        file_list = []
+        for root, _, files in os.walk(self.code_path):
+            for file in files:
+                file_list.append(os.path.join(root, file))
+        logger.info(f"[{self.cycle_id}] Retrieved file list.")
+        return file_list
+```
