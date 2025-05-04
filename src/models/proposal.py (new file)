@@ -1,0 +1,10 @@
+```python
+from typing import TypedDict, List, Optional
+
+class Proposal(TypedDict):
+    area_for_improvement: str
+    rationale: str
+    suggested_changes: str
+    risks: str
+    effort_level: str
+```
