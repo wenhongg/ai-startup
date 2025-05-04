@@ -1,0 +1,21 @@
+```python
+import logging
+from typing import Any, Dict, Optional
+
+class BaseAgent:
+    def __init__(self, agent_name: str):
+        self.agent_name = agent_name
+        self.logger = logging.getLogger(agent_name)
+
+    def execute(self, task: str, context: Optional[Dict[str, Any]] = None) -> Any:
+        self.logger.info(f"Agent {self.agent_name} executing task: {task}")
+        try:
+            result = self._execute(task, context)
+            self.logger.info(f"Agent {self.agent_name} task '{task}' completed successfully.")
+            return result
+        except Exception as e:
+            self.logger.error(f"Agent {self.agent_name} failed to execute task '{task}': {e}", exc_info=True)
+            raise
+    def _execute(self, task: str, context: Optional[Dict[str, Any]] = None) -> Any:
+        raise NotImplementedError("Subclasses must implement the _execute method.")
+```
