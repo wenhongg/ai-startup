@@ -1,0 +1,78 @@
+```python
+import time
+import logging
+from typing import List, Dict, Any
+from src.agents.base import Agent
+from src.agents.founder import FounderAgent
+from src.agents.developer import DeveloperAgent
+from src.agents.code_reader import CodeReaderAgent
+from src.observability import Observability
+
+class SystemOrchestrator:
+    def __init__(self, agents: List[Agent] = None):
+        self.logger = logging.getLogger(__name__)
+        self.observability = Observability()
+        self.agents = agents or []
+        if not self.agents:
+            self.agents = [
+                FounderAgent(),
+                DeveloperAgent(),
+                CodeReaderAgent()
+            ]
+
+
+    def run_improvement_cycle(self, user_prompt: str) -> Dict[str, Any]:
+        cycle_id = self.observability.start_cycle()
+        try:
+            self.observability.log_phase(cycle_id, "founder_agent_start")
+            founder_response = self._run_founder_agent(user_prompt, cycle_id)
+            self.observability.log_phase(cycle_id, "founder_agent_complete")
+
+            self.observability.log_phase(cycle_id, "developer_agent_start")
+            developer_response = self._run_developer_agent(founder_response, cycle_id)
+            self.observability.log_phase(cycle_id, "developer_agent_complete")
+
+            self.observability.log_phase(cycle_id, "code_reader_agent_start")
+            code_reader_response = self._run_code_reader_agent(developer_response, cycle_id)
+            self.observability.log_phase(cycle_id, "code_reader_agent_complete")
+
+
+            self.observability.end_cycle(cycle_id)
+            return {"cycle_id": cycle_id, "status": "success", "message": "Improvement cycle completed."}
+        except Exception as e:
+            self.logger.error(f"Cycle {cycle_id} failed: {e}")
+            self.observability.log_error(cycle_id, str(e))
+            self.observability.end_cycle(cycle_id, status="failed")
+            return {"cycle_id": cycle_id, "status": "error", "message": str(e)}
+
+
+    def _run_founder_agent(self, user_prompt: str, cycle_id: str) -> Dict[str, Any]:
+        try:
+            self.logger.info(f"Cycle {cycle_id}: Running Founder Agent with prompt: {user_prompt}")
+            response = self.agents[0].execute(user_prompt, cycle_id)
+            self.logger.info(f"Cycle {cycle_id}: Founder Agent response: {response}")
+            return response
+        except Exception as e:
+            self.logger.error(f"Cycle {cycle_id}: Founder Agent failed: {e}")
+            raise
+
+    def _run_developer_agent(self, founder_response: Dict[str, Any], cycle_id: str) -> Dict[str, Any]:
+        try:
+            self.logger.info(f"Cycle {cycle_id}: Running Developer Agent with founder_response: {founder_response}")
+            response = self.agents[1].execute(founder_response, cycle_id)
+            self.logger.info(f"Cycle {cycle_id}: Developer Agent response: {response}")
+            return response
+        except Exception as e:
+            self.logger.error(f"Cycle {cycle_id}: Developer Agent failed: {e}")
+            raise
+
+    def _run_code_reader_agent(self, developer_response: Dict[str, Any], cycle_id: str) -> Dict[str, Any]:
+        try:
+            self.logger.info(f"Cycle {cycle_id}: Running Code Reader Agent with developer_response: {developer_response}")
+            response = self.agents[2].execute(developer_response, cycle_id)
+            self.logger.info(f"Cycle {cycle_id}: Code Reader Agent response: {response}")
+            return response
+        except Exception as e:
+            self.logger.error(f"Cycle {cycle_id}: Code Reader Agent failed: {e}")
+            raise
+```
