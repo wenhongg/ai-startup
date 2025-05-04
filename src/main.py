@@ -39,7 +39,7 @@ async def main():
         while True:
             try:
                 # Run a single improvement cycle
-                await orchestrator.run_improvement_cycle()
+                orchestrator.run_improvement_cycle()
                 
                 # Clean up rate limiter
                 rate_limiter.cleanup()
@@ -48,11 +48,11 @@ async def main():
                 await asyncio.sleep(60 * 60 * 24)  # 1 day between cycles
                 
             except Exception as e:
-                print(f"Error in improvement cycle: {e}")
+                logger.error(f"Error in improvement cycle: {e}")
                 await asyncio.sleep(300)  # 5 minutes before retry
                 
     except Exception as e:
-        print(f"Fatal error: {e}")
+        logger.error(f"Fatal error: {e}")
         raise
 
 @app.get("/")
