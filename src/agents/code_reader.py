@@ -1,3 +1,4 @@
+```python
 """
 Code reader agent that specializes in summarizing code files.
 """
@@ -40,13 +41,14 @@ class CodeReader(BaseAgent):
             print(f"Error loading prompt {filename}: {e}")
             return ""
         
-    def summarize(self, file_path: str, content: str) -> Dict[str, Any]:
+    def summarize(self, file_path: str, content: str, file_type: str) -> Dict[str, Any]:
         """
         Generate a concise summary of a code file.
         
         Args:
             file_path: Path to the file
             content: Content of the file
+            file_type: Type of the file (e.g., "Python", "JavaScript")
             
         Returns:
             Dictionary containing the summary and metadata
@@ -54,7 +56,8 @@ class CodeReader(BaseAgent):
         prompt_template = self._load_prompt("code_summary.txt")
         prompt = prompt_template.format(
             file_path=file_path,
-            content=content
+            content=content,
+            file_type=file_type
         )
         
         try:
@@ -82,7 +85,8 @@ class CodeReader(BaseAgent):
             try:
                 content = self.repo_reader.get_file_content(file_path)
                 if content:
-                    summary = self.summarize(file_path, content)
+                    file_type = file_path.split('.')[-1].capitalize()
+                    summary = self.summarize(file_path, content, file_type)
                     # Check if summary exists in the result (it won't exist if summarization failed)
                     if "summary" in summary:
                         summaries.append(f"File: {file_path}\n{summary['summary']}\n")
@@ -136,4 +140,5 @@ class CodeReader(BaseAgent):
                 self.logger.warning(f"File not found: {file_path}")
                 return ""
             self.logger.error(f"Error reading file {file_path}: {str(e)}")
-            raise 
+            raise
+```
