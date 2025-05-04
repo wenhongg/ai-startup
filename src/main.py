@@ -1,3 +1,4 @@
+```python
 """
 Main entry point for the AI Startup Self-Improvement System.
 """
@@ -10,6 +11,9 @@ import uvicorn
 from src.orchestrator import SystemOrchestrator
 from src.rate_limits import rate_limiter
 from src.config import settings
+from src.observability import Observability
+import json
+import os
 
 # Configure logging
 logging.basicConfig(
@@ -29,12 +33,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+orchestrator = SystemOrchestrator()
+observability = Observability()
+
 async def main():
     """Run the AI startup system."""
     try:
-        # Initialize the orchestrator
-        orchestrator = SystemOrchestrator()
-        
         # Run improvement cycles
         while True:
             try:
@@ -81,5 +85,30 @@ async def run_improvement_cycle():
         logger.error(f"Error in improvement cycle: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/cycle/status")
+async def get_cycle_status():
+    """
+    Get the current status of the improvement cycle.
+    """
+    try:
+        status = observability.get_cycle_status()
+        return status
+    except Exception as e:
+        logger.error(f"Error getting cycle status: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/cycle/history")
+async def get_cycle_history(limit: int = 20):
+    """
+    Get the history of completed improvement cycles.
+    """
+    try:
+        history = observability.get_cycle_history(limit)
+        return history
+    except Exception as e:
+        logger.error(f"Error getting cycle history: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
-    asyncio.run(main()) 
+    asyncio.run(main())
+```
