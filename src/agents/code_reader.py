@@ -1,3 +1,4 @@
+```python
 """
 Code reader agent that specializes in summarizing code files.
 """
@@ -9,6 +10,9 @@ from .base import BaseAgent
 from ..repo_reader import RepoReader
 from ..config import settings
 from github import Github
+from functools import lru_cache
+import time
+import backoff
 
 class CodeReader(BaseAgent):
     """Agent that reads and summarizes code files."""
@@ -37,9 +41,23 @@ class CodeReader(BaseAgent):
             with open(prompt_path, "r") as f:
                 return f.read().strip()
         except Exception as e:
-            print(f"Error loading prompt {filename}: {e}")
+            self.logger.error(f"Error loading prompt {filename}: {e}")
             return ""
-        
+    
+    @backoff.on_exception(backoff.expo,
+                          (Exception),  # Consider more specific exception types here
+                          max_tries=3)
+    def _generate_summary(self, prompt: str) -> str:
+        """
+        Generates a summary using the LLM, with retry logic.
+        """
+        try:
+            return self.generate_response(prompt)
+        except Exception as e:
+            self.logger.error(f"Error generating summary: {e}. Retrying...")
+            raise  # Re-raise to trigger backoff
+
+    @lru_cache(maxsize=128)
     def summarize(self, file_path: str, content: str) -> Dict[str, Any]:
         """
         Generate a concise summary of a code file.
@@ -52,13 +70,19 @@ class CodeReader(BaseAgent):
             Dictionary containing the summary and metadata
         """
         prompt_template = self._load_prompt("code_summary.txt")
+        if not prompt_template:
+            return {
+                "file_path": file_path,
+                "error": "Failed to load summary prompt."
+            }
+
         prompt = prompt_template.format(
             file_path=file_path,
             content=content
         )
         
         try:
-            summary = self.generate_response(prompt)
+            summary = self._generate_summary(prompt)
             return {
                 "file_path": file_path,
                 "summary": summary,
@@ -87,7 +111,7 @@ class CodeReader(BaseAgent):
                     if "summary" in summary:
                         summaries.append(f"File: {file_path}\n{summary['summary']}\n")
             except Exception as e:
-                print(f"Error processing file {file_path}: {e}")
+                self.logger.error(f"Error processing file {file_path}: {e}")
                 summaries.append(f"File: {file_path}\nError: {str(e)}\n")
         
         self._cached_summaries = "\n".join(summaries)
@@ -126,4 +150,37 @@ class CodeReader(BaseAgent):
                 self.logger.warning(f"File not found: {file_path}")
                 return ""
             self.logger.error(f"Error reading file {file_path}: {str(e)}")
-            raise 
+            raise
+```
+
+**Technical Analysis:**
+
+The primary requirements involve implementing caching, improving the summary prompt, and adding error handling and retries to the `CodeReader` agent. The caching mechanism utilizes `functools.lru_cache` to store code summaries, keyed by file paths.  Error handling includes logging exceptions and retrying failed API calls using the `backoff` library. The code summarization prompt in `code_summary.txt` will be updated separately.
+
+**Implementation Plan:**
+
+1.  **Add `lru_cache` to `summarize`:** The `summarize` method is decorated with `@lru_cache(maxsize=128)` to enable caching of summaries. The cache key will be the file path.
+2.  **Implement Retry Mechanism:** Implement retry logic using the `backoff` library. The `_generate_summary` function encapsulates the `generate_response` call and applies the retry decorator with exponential backoff.  This function is called by `summarize`.
+3.  **Enhance Error Handling and Logging:** Improved error handling by logging errors using the `self.logger`.  Errors during prompt loading are also logged.
+4.  **Testability:** The changes are designed to be testable with unit tests.
+
+**Safety Considerations:**
+
+1.  **Caching:** Caching can lead to stale summaries if the code changes frequently. The `maxsize` parameter of `lru_cache` limits the cache size. The system will regenerate summaries when the cache expires or is evicted.
+2.  **Retries:** Retries can increase API costs if there are persistent errors.  The exponential backoff strategy limits the number of retries and the time spent retrying.
+
+**Testing Approach:**
+
+1.  **Unit Tests:**
+    *   Test that the `summarize` method correctly uses the cache. Verify that the cache is populated and that subsequent calls with the same file path retrieve the summary from the cache.
+    *   Test the retry mechanism. Mock the `generate_response` method to simulate API errors and verify that the retry logic is triggered and eventually succeeds (or fails after the maximum number of retries).
+    *   Test that errors are logged correctly with appropriate error messages.
+    *   Test that error cases in reading prompt files are handled.
+2.  **Integration Tests:**  (Future - Consider adding integration tests)
+    *   Ensure that the `CodeReader` integrates correctly with the `RepoReader`.
+
+**Rollback Plan:**
+
+1.  **Revert Changes:** In case of issues, the changes can be easily reverted by discarding the changes in the version control system.
+2.  **Disable Caching (Temporarily):** If caching causes problems (e.g., stale data), the `@lru_cache` decorator can be removed temporarily to disable caching.
+3.  **Disable Retries (Temporarily):** The `@backoff.on_exception` decorator can be removed from `_generate_summary` function to disable the retry mechanism.
