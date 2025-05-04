@@ -8,6 +8,7 @@ class FounderAI(BaseAgent):
         self.temperature = settings.temperature_founder
         self.code_reader = code_reader
         self.system_prompt = self._load_prompt("founder.txt")
+        self._cached_proposal = None
 
     def generate_proposal(self, product_summaries: str) -> str:
         """Generate an improvement proposal based on the product information.
@@ -18,10 +19,30 @@ class FounderAI(BaseAgent):
         Returns:
             A detailed improvement proposal
         """
+        # Check cache first
+        if self._cached_proposal is not None:
+            return self._cached_proposal
+
         prompt = f"""{self.system_prompt}
 
 Product Information:
 {product_summaries}
 
-Based on the above information, please analyze the current state and propose improvements."""
-        return self.generate_response(prompt=prompt) 
+Based on the above information, please analyze the current state and propose improvements.
+Focus on a small area to improve, and make sure it's something that will be useful to the user."""
+
+        proposal = self.generate_response(prompt=prompt)
+        self._cached_proposal = proposal
+        return proposal
+
+    def get_cached_proposal(self) -> str:
+        """Get the cached proposal if available.
+        
+        Returns:
+            The cached proposal, or None if no proposal has been generated yet
+        """
+        return self._cached_proposal
+
+    def reset(self):
+        """Clear the cached proposal."""
+        self._cached_proposal = None 

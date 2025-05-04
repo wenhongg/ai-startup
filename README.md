@@ -8,6 +8,8 @@ An autonomous system that continuously improves its own codebase using AI agents
 - **Continuous Learning**: System learns from its own improvements
 - **Self-Maintaining**: Automatically updates dependencies and documentation
 - **Real-time Monitoring**: Tracks system performance and improvements
+- **GitHub Integration**: Direct integration with GitHub for code management
+- **Rate Limiting**: Smart management of API usage for both GitHub and AI services
 
 ## Architecture
 
@@ -16,18 +18,19 @@ The system consists of several key components:
 1. **AI Agents**:
    - Founder Agent: Strategic planning and high-level improvements
    - Developer Agent: Code implementation and technical improvements
+   - Code Reader: Specialized in reading and summarizing code files
 
 2. **Core Components**:
    - System Orchestrator: Coordinates the improvement cycle
-   - Code Manager: Handles code changes and version control
+   - Code Manager: Handles GitHub operations (branches, pull requests, file changes)
    - Rate Limiter: Manages API usage and resource allocation
-   - Observability: Monitors system performance and improvements
+   - Repo Reader: Handles GitHub repository access and file operations
 
 3. **Infrastructure**:
    - FastAPI backend
-   - SQLite database
-   - GitHub integration
+   - GitHub API integration
    - Gemini API for AI capabilities
+   - Environment-based configuration
 
 ## Development
 
@@ -35,7 +38,7 @@ The system consists of several key components:
 
 - Python 3.8 or higher
 - Git
-- A GitHub account
+- A GitHub account with a Personal Access Token (with `repo` permissions)
 - A Gemini API key (get it from [Google AI Studio](https://makersuite.google.com/app/apikey))
 
 ### Local Setup
@@ -62,102 +65,60 @@ The system consists of several key components:
    ```bash
    # Get your API key from https://makersuite.google.com/app/apikey
    GEMINI_API_KEY=your_key_here
+   
+   # Create a GitHub Personal Access Token with 'repo' permissions
    GITHUB_TOKEN=your_token_here
+   
+   # Optional: Configure other settings
+   GEMINI_RATE_LIMIT=60
+   GITHUB_RATE_LIMIT=5000
+   LOG_LEVEL=INFO
    ```
 
 ### Running the Application
 
-1. Make sure you're in the virtual environment (you should see `(venv)` in your prompt)
-
-2. Start the development server:
+1. Start the application:
    ```bash
-   python -m src.main
+   python src/main.py
    ```
 
-3. The server will be available at `http://localhost:8000`
+2. The system will:
+   - Initialize all components
+   - Start the improvement cycle
+   - Create pull requests for approved changes
+   - Monitor and log all operations
 
 ### Testing
 
-1. Make sure you're in the virtual environment and the package is installed in development mode
+Run the test suite:
+```bash
+# Run all tests
+python -m pytest
 
-2. Run all tests:
-   ```bash
-   pytest
-   ```
+# Run specific test file
+python -m pytest tests/test_code_manager.py -v
+```
 
-3. Run tests with coverage:
-   ```bash
-   pytest --cov=src
-   ```
+## How It Works
 
-4. Run specific test file:
-   ```bash
-   pytest tests/test_repo_reader.py
-   ```
+1. **Improvement Cycle**:
+   - Code Reader summarizes the current codebase
+   - Founder Agent analyzes and proposes improvements
+   - Developer Agent reviews and implements changes
+   - Code Manager creates pull requests on GitHub
+   - System Orchestrator coordinates the entire process
 
-### Development Workflow
+2. **Code Management**:
+   - Automatic branch creation
+   - File modification and creation
+   - Pull request generation
+   - Rate-limited API calls
 
-1. Make your changes in the `src` directory
-2. Run tests to ensure everything works
-3. Commit your changes
-4. The system will automatically analyze and improve the codebase
-
-### Code Quality
-
-The project uses several tools to maintain code quality:
-
-1. **Black**: Code formatting
-   ```bash
-   black src tests
-   ```
-
-2. **isort**: Import sorting
-   ```bash
-   isort src tests
-   ```
-
-3. **flake8**: Linting
-   ```bash
-   flake8 src tests
-   ```
-
-4. **mypy**: Type checking
-   ```bash
-   mypy src
-   ```
-
-### Troubleshooting
-
-#### ModuleNotFoundError: No module named 'ai_startup'
-
-This error occurs when the package isn't installed in development mode. To fix:
-
-1. Make sure you're in the virtual environment:
-   ```bash
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-2. Install the package in development mode:
-   ```bash
-   pip install -e ".[dev]"
-   ```
-
-3. Verify the installation:
-   ```bash
-   pip list | grep ai-startup
-   ```
-
-#### Other Common Issues
-
-- **Package not found**: Make sure you're in the correct directory and the virtual environment is activated
-
-- **API errors**: Check your `.env` file and make sure your API keys are correct
-
-## API Documentation
-
-Once the server is running, visit:
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+3. **Safety Features**:
+   - Protected code patterns
+   - Rate limiting
+   - Error handling
+   - Logging and monitoring
 
 ## Contributing
 
@@ -168,4 +129,4 @@ Once the server is running, visit:
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 
+MIT License - see LICENSE file for details 
