@@ -92,40 +92,33 @@ FILES:
         # First review the proposal to get the plan
         title, description, files_to_change = self.review_proposal(proposal)
         
-        # Process each file
+        # Collect all file contents into a dictionary
         changes = {}
+        files_data = {}
         for file_path in files_to_change:
-            # Get current file contents
-            current_content = self.code_reader.read_file(file_path)
-            
-            # Remove ` characters from file_path if they exist at start or end
-            file_path = file_path.strip('`')
-            
-            # Format the prompt for this file
-            prompt = f"""Based on the following pull request details and current file contents, 
-update the file to implement the requested changes.
-
-Pull Request Title: {title}
-Pull Request Description: {description}
-
-Current filename: {file_path}
-Current file contents:
-{current_content}
-
-Please provide the complete updated file contents, maintaining the same file structure and format.
-For each file, return ONLY the complete code that should replace the existing file. Do not include any explanations, comments about the changes, or markdown formatting. Strictly no markdown formatting."""
-            
-            # Get the updated file contents
-            updated_content = self.generate_response(prompt)
-            
-            # Remove lines that start with ``` at beginning or end
-            lines = updated_content.split('\n')
-            while lines and lines[0].strip().startswith('```'):
-                lines.pop(0)
-            while lines and lines[-1].strip().startswith('```'):
-                lines.pop()
-            updated_content = '\n'.join(lines)
-            
-            changes[file_path] = updated_content
+            # Remove backticks if present
+            cleaned_path = file_path.strip('`')
+            files_data[cleaned_path] = self.code_reader.read_file(cleaned_path)
+        
+        # Build a single prompt including all files and pull request details
+        prompt = (
+            f"Based on the following pull request details and current file contents, update each file to implement the requested changes.\n\n"
+            f"Pull Request Title: {title}\n"
+            f"Pull Request Description: {description}\n\n"
+            "Files:\n"
+        )
+        for filename, content in files_data.items():
+            prompt += f"File: {filename}\n"
+            prompt += "-----\n"
+            prompt += content + "\n"
+            prompt += "-----\n\n"
+        prompt += "Please provide the complete updated file contents for each file as a JSON object, where each key is the file path and its value is the updated content. Do not include any explanations, comments, or markdown formatting."
+        
+        # Call generate_response once with the combined prompt
+        response = self.generate_response(prompt)
+        
+        # Parse the JSON response to extract changes
+        import json
+        changes = json.loads(response)
         
         return changes, title, description
