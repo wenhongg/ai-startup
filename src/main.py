@@ -1,85 +1,41 @@
-"""
-Main entry point for the AI Startup Self-Improvement System.
-"""
-
-import asyncio
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 import logging
-import uvicorn
-from src.orchestrator import SystemOrchestrator
-from src.rate_limits import rate_limiter
-from src.config import settings
+from typing import Optional
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
+from src.observability import Observability
+
+app = FastAPI()
+observability = Observability()
 
 # Configure logging
-logging.basicConfig(
-    level=settings.log_level,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
-app = FastAPI(title="AI Self-Improvement System")
-
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-async def main():
-    """Run the AI startup system."""
-    try:
-        # Initialize the orchestrator
-        orchestrator = SystemOrchestrator()
-        
-        # Run improvement cycles
-        while True:
-            try:
-                # Run a single improvement cycle
-                orchestrator.run_improvement_cycle()
-                
-                # Clean up rate limiter
-                rate_limiter.cleanup()
-                
-                # Wait before next cycle
-                await asyncio.sleep(60 * 60 * 24)  # 1 day between cycles
-                
-            except Exception as e:
-                logger.error(f"Error in improvement cycle: {e}")
-                await asyncio.sleep(300)  # 5 minutes before retry
-                
-    except Exception as e:
-        logger.error(f"Fatal error: {e}")
-        raise
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 @app.get("/")
-async def root():
-    return {"message": "AI Self-Improvement System is running"}
+async def read_root():
+    return {"message": "Welcome to the Improvement Cycle Monitoring System"}
 
-@app.post("/improve")
-async def run_improvement_cycle():
-    """
-    Trigger a single improvement cycle
-    """
+@app.get("/status")
+async def get_status():
     try:
-        result = orchestrator.improvement_cycle()
-        if result:
-            return {
-                "status": "success",
-                "message": "Improvement cycle completed successfully",
-                "details": result
-            }
-        else:
-            return {
-                "status": "failed",
-                "message": "Improvement cycle failed or was aborted"
-            }
-    except Exception as e:
-        logger.error(f"Error in improvement cycle: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        cycle_data = observability.get_cycle_data()
+        if not cycle_data:
+            return JSONResponse(content={"status": "idle", "message": "No active improvement cycle."}, status_code=200)
 
-if __name__ == "__main__":
-    asyncio.run(main()) 
+        # Sanitize potentially sensitive data
+        sanitized_cycle_data = {
+            "status": cycle_data.get("status", "unknown"),
+            "stage": cycle_data.get("stage", "unknown"),
+            "start_time": cycle_data.get("start_time"),
+            "end_time": cycle_data.get("end_time"),
+            "proposal": {
+                "title": cycle_data.get("proposal", {}).get("title"),
+                "description": cycle_data.get("proposal", {}).get("description"),
+            },
+            "pull_request_url": cycle_data.get("pull_request_url"),
+            "errors": cycle_data.get("errors", []),
+        }
+
+        return JSONResponse(content=sanitized_cycle_data, status_code=200)
+    except Exception as e:
+        logging.error(f"Error retrieving status: {e}")
+        return JSONResponse(content={"status": "error", "message": f"Error retrieving status: {e}"}, status_code=500)
