@@ -1,0 +1,45 @@
+```python
+import logging
+from typing import Any, Dict, List, Optional
+
+from .base import Agent
+from ..utils import load_yaml_file
+from ..observability import Observability
+
+logger = logging.getLogger(__name__)
+
+
+class FounderAgent(Agent):
+    """
+    The FounderAgent is responsible for defining the vision and goals for the system.
+    It takes in the initial prompt and other inputs and generates the founder's vision.
+    """
+
+    def __init__(self, config_path: str, observability: Observability):
+        super().__init__()
+        self.config = load_yaml_file(config_path)
+        self.observability = observability
+
+    def define_vision(self, prompt: str) -> Dict[str, Any]:
+        """
+        Defines the founder's vision based on the initial prompt.
+
+        Args:
+            prompt (str): The initial prompt provided by the user.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the founder's vision.
+        """
+        self.observability.log_step("founder_agent:define_vision", "Defining founder's vision.")
+        try:
+            # Simulate processing.  In a real system, this would involve calling an LLM.
+            vision = {
+                "vision": f"The founder's vision based on '{prompt}' is to create a cutting-edge AI-powered system.",
+                "goals": ["Enhance user experience", "Improve system performance", "Ensure system stability"],
+            }
+            self.observability.log_step("founder_agent:define_vision", "Vision defined successfully.")
+            return vision
+        except Exception as e:
+            self.observability.log_error("founder_agent:define_vision", f"Error defining vision: {e}")
+            raise
+```
