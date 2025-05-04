@@ -8,7 +8,6 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 import uvicorn
 from src.orchestrator import SystemOrchestrator
-from src.observability import Observability
 from src.rate_limits import rate_limiter
 from src.config import settings
 
@@ -46,7 +45,7 @@ async def main():
                 rate_limiter.cleanup()
                 
                 # Wait before next cycle
-                await asyncio.sleep(60)  # 1 minute between cycles
+                await asyncio.sleep(60 * 60 * 24)  # 1 day between cycles
                 
             except Exception as e:
                 print(f"Error in improvement cycle: {e}")

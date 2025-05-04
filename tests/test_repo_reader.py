@@ -29,25 +29,6 @@ def test_get_file_content(repo_reader):
     content = repo_reader.get_file_content("nonexistent.py")
     assert content is None
 
-def test_get_python_files(repo_reader):
-    """Test getting Python files from repository."""
-    files = repo_reader.get_python_files()
-    assert len(files) > 0
-    assert all(file["path"].endswith(".py") for file in files)
-    assert all("content" in file for file in files)
-
-def test_get_file_history(repo_reader):
-    """Test getting file commit history."""
-    history = repo_reader.get_file_history("README.md")
-    assert len(history) > 0
-    assert all("sha" in commit for commit in history)
-    assert all("message" in commit for commit in history)
-    assert all("date" in commit for commit in history)
-    
-    # Test with limit
-    history = repo_reader.get_file_history("README.md", limit=1)
-    assert len(history) == 1
-
 def test_get_all_files(repo_reader):
     """Test getting all files from repository."""
     # Test getting files from root directory

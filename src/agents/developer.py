@@ -1,113 +1,117 @@
 from ..agents.base import BaseAgent
-from ..repo_reader import RepoReader
 from ..config import settings
+from .code_reader import CodeReader
 from typing import Dict, Any, List, Tuple, Optional
 
 class DeveloperAI(BaseAgent):
-    def __init__(self, repo_url: str):
+    def __init__(self, code_reader: CodeReader):
         super().__init__()
         self.temperature = settings.temperature_developer
         self.system_prompt = self._load_prompt("developer.txt")
-        self.repo_reader = RepoReader(repo_url)
+        self.code_reader = code_reader
 
-    async def review_proposal(self, proposal: str) -> str:
-        # Get all Python files from the repository
-        files = self.repo_reader.get_python_files()
-        
-        # Analyze each file
-        analysis_results = []
-        for file in files:
-            analysis = await self.analyze_code(file["content"])
-            analysis_results.append({
-                "file": file["path"],
-                "analysis": analysis
-            })
-        
-        # Then generate a response based on the analysis
-        return await self.generate_response(
-            "Review the following improvement proposal and create an implementation plan:",
-            {
-                "proposal": proposal,
-                "files": files,
-                "analysis": analysis_results
-            }
-        )
-
-    async def implement_changes(self, plan: str) -> Tuple[Dict[str, Any], str, str]:
+    def review_proposal(self, proposal: str) -> Tuple[str, str, List[str]]:
         """
-        Implement the changes and generate pull request details
+        Review the proposal and create a plan for implementation.
+        
+        Args:
+            proposal: The improvement proposal from the founder
+            
+        Returns:
+            Tuple containing:
+            - PR title: A clear, concise title for the pull request
+            - PR description: Detailed description of the changes
+            - files_to_change: List of file paths that need to be modified
+        """
+        # Get code summaries
+        code_summaries = self.code_reader.get_code_summaries()
+        
+        # Format the prompt with all parameters
+        prompt = f"""
+Review the following improvement proposal and create a detailed implementation plan:
+
+Proposal:
+{proposal}
+
+Current codebase summaries:
+{code_summaries}
+
+Please provide:
+1. A clear, concise title for the pull request (max 50 characters)
+2. A detailed description of the changes to be made, including:
+   - What changes will be made
+   - Why these changes are beneficial
+   - Any potential impacts
+   - Testing that will be done
+3. A list of specific files that need to be modified, with a brief explanation for each
+
+Format your response as follows:
+TITLE: [your title here]
+DESCRIPTION: [your description here]
+FILES:
+- file1.py: [reason for change]
+- file2.py: [reason for change]
+...
+"""
+        response = self.generate_response(prompt)
+        
+        # Parse the response
+        title = ""
+        description = ""
+        files_to_change = []
+        
+        current_section = None
+        for line in response.split('\n'):
+            line = line.strip()
+            if not line:
+                continue
+                
+            if line.startswith('TITLE:'):
+                current_section = 'title'
+                title = line[6:].strip()
+            elif line.startswith('DESCRIPTION:'):
+                current_section = 'description'
+                description = line[12:].strip()
+            elif line.startswith('FILES:'):
+                current_section = 'files'
+            elif current_section == 'description':
+                description += '\n' + line
+            elif current_section == 'files' and line.startswith('-'):
+                # Extract file path and reason
+                parts = line[1:].split(':', 1)
+                if len(parts) == 2:
+                    file_path = parts[0].strip()
+                    files_to_change.append(file_path)
+        
+        return title, description, files_to_change
+
+    def implement_changes(self, proposal: str) -> Tuple[Dict[str, Any], str, str]:
+        """Implement the changes and generate pull request details
         Returns a tuple of (changes, title, description)
         """
-        # Get all Python files from the repository
-        files = self.repo_reader.get_python_files()
+        # First review the proposal to get the plan
+        title, description, files_to_change = self.review_proposal(proposal)
         
-        # Analyze each file
-        analysis_results = []
-        for file in files:
-            analysis = await self.analyze_code(file["content"])
-            analysis_results.append({
-                "file": file["path"],
-                "analysis": analysis
-            })
-        
-        response = await self.generate_response(
-            "Implement the changes according to the following plan and provide a pull request title and description:",
-            {
-                "plan": plan,
-                "files": files,
-                "analysis": analysis_results,
-                "instructions": """
-                Please provide:
-                1. The code changes for each file
-                2. A clear, concise title for the pull request
-                3. A detailed description including:
-                   - What changes were made
-                   - Why these changes are beneficial
-                   - Any potential impacts
-                   - Testing that was done
-                """
-            }
-        )
-        
-        # Parse the response to extract changes, title, and description
-        # This is a simplified version - you might want to add more robust parsing
-        changes = {}  # This would be parsed from the response
-        title = "AI-generated improvements"  # This would be parsed from the response
-        description = response  # This would be parsed from the response
+        # Process each file
+        changes = {}
+        for file_path in files_to_change:
+            # Get current file contents
+            current_content = self.code_reader.read_file(file_path)
+            
+            # Format the prompt for this file
+            prompt = f"""Based on the following pull request details and current file contents, 
+update the file to implement the requested changes.
+
+Pull Request Title: {title}
+Pull Request Description: {description}
+
+Current file contents:
+{current_content}
+
+Please provide the complete updated file contents, maintaining the same file structure and format."""
+            
+            # Get the updated file contents
+            updated_content = self.generate_response(prompt)
+            changes[file_path] = updated_content
         
         return changes, title, description
-
-    async def fix_issues(self, changes: Dict[str, Any], issues: List[str]) -> Tuple[Dict[str, Any], str, str]:
-        """
-        Fix issues found in the changes and return improved version with updated PR details
-        Returns a tuple of (changes, title, description)
-        """
-        # Get all Python files from the repository
-        files = self.repo_reader.get_python_files()
-        
-        # Analyze each file
-        analysis_results = []
-        for file in files:
-            analysis = await self.analyze_code(file["content"])
-            analysis_results.append({
-                "file": file["path"],
-                "analysis": analysis
-            })
-        
-        response = await self.generate_response(
-            "Fix the following issues in the changes:",
-            {
-                "changes": changes,
-                "files": files,
-                "analysis": analysis_results,
-                "issues": issues
-            }
-        )
-        
-        # Parse the response to extract changes, title, and description
-        # This is a simplified version - you might want to add more robust parsing
-        fixed_changes = {}  # This would be parsed from the response
-        title = "Fixed issues in AI-generated improvements"  # This would be parsed from the response
-        description = response  # This would be parsed from the response
-        
-        return fixed_changes, title, description 

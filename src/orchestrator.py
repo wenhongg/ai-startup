@@ -2,13 +2,12 @@
 System orchestrator that coordinates the improvement cycle.
 """
 
-import asyncio
 from typing import Dict, Any, List
 from .rate_limits import RateLimiter
 from .code_manager import CodeManager
 from .agents.founder import FounderAI
 from .agents.developer import DeveloperAI
-from .observability import Observability
+from .agents.code_reader import CodeReader
 from .config import settings
 
 class SystemOrchestrator:
@@ -18,31 +17,36 @@ class SystemOrchestrator:
         """Initialize the orchestrator with all necessary components."""
         self.rate_limiter = RateLimiter()
         self.code_manager = CodeManager()
-        self.founder = FounderAI()
-        self.developer = DeveloperAI(settings.repo_url)
-        self.observability = Observability()
+        self.code_reader = CodeReader()
+        self.founder = FounderAI(self.code_reader)
+        self.developer = DeveloperAI(self.code_reader)
         
-    async def run_improvement_cycle(self):
+    def run_improvement_cycle(self):
         """Run a complete improvement cycle."""
         print("Running improvement cycle...")
         try:
-            # Get current code state
-            current_code = await self.code_manager.get_current_state()
+            # Summarize the repository first
+            print("Summarizing repository...")
+            self.code_reader.summarize_repository()
             
-            # Founder proposes improvements
-            proposal = await self.founder.generate_proposal()
+            print("Generating proposal...")
+            # Get product summaries and generate proposal
+            product_summaries = self.code_reader.get_code_summaries()
+            proposal = self.founder.generate_proposal(product_summaries)
             
-            print(f"Proposal: {proposal}")
-            # Below stages in progress.
+            print("Implementing changes...")
             # Developer reviews and implements
-            # changes, title, description = await self.developer.implement_changes(proposal)
+            changes, title, description = self.developer.implement_changes(proposal)
             
-            # Apply changes
-            # await self.code_manager.apply_changes(changes, title, description)
-            
-            # Log the cycle
-            # self.observability.log_cycle(proposal, changes)
+            print(f"Changes: {changes}")
+            print(f"Title: {title}")
+            print(f"Description: {description}")
+
+            print("Creating pull request...")
+            # Create pull request with changes
+            pr_url = self.code_manager.create_pull_request(changes, title, description)
+            print(f"Created pull request: {pr_url}")
             
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"Error in improvement cycle: {e}")
             raise 

@@ -3,6 +3,8 @@ import logging
 from datetime import datetime
 import os
 
+# TODO: Not in use
+
 class Observability:
     def __init__(self):
         self.logger = logging.getLogger(__name__)

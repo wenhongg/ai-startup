@@ -1,27 +1,27 @@
 from ..agents.base import BaseAgent
 from ..config import settings
-from ..repo_reader import RepoReader
 from .code_reader import CodeReader
 
 class FounderAI(BaseAgent):
-    def __init__(self):
+    def __init__(self, code_reader: CodeReader):
         super().__init__()
         self.temperature = settings.temperature_founder
-        self.repo_reader = RepoReader(settings.repo_url, settings.branch)
-        self.code_reader = CodeReader()
-        self.system_prompt = None  # Will be set in initialize()
+        self.code_reader = code_reader
+        self.system_prompt = self._load_prompt("founder.txt")
 
-    async def initialize(self):
-        """Initialize the founder AI with product summaries."""
-        self.system_prompt = self._load_prompt("founder.txt").format(
-            product_summaries=await self._get_product_summaries()
-        )
+    def generate_proposal(self, product_summaries: str) -> str:
+        """Generate an improvement proposal based on the product information.
+        
+        Args:
+            product_summaries: A comprehensive summary of the product codebase
+            
+        Returns:
+            A detailed improvement proposal
+        """
+        prompt = f"""{self.system_prompt}
 
-    async def _get_product_summaries(self) -> str:
-        """Get a comprehensive summary of the product."""
-        return await self.code_reader.summarize_repository()
+Product Information:
+{product_summaries}
 
-    async def generate_proposal(self) -> str:
-        return await self.generate_response(
-            prompt="Generate a detailed improvement proposal based on the product information."
-        ) 
+Based on the above information, please analyze the current state and propose improvements."""
+        return self.generate_response(prompt=prompt) 
