@@ -1,0 +1,23 @@
+```python
+import time
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from src.orchestrator import SystemOrchestrator
+
+app = FastAPI()
+
+class ImprovementRequest(BaseModel):
+    objective: str
+    instructions: str
+
+@app.post("/improve")
+async def improve(request: ImprovementRequest):
+    cycle_id = str(int(time.time()))
+    try:
+        orchestrator = SystemOrchestrator()
+        orchestrator.run(objective=request.objective, instructions=request.instructions, cycle_id=cycle_id)
+        return {"message": "Improvement cycle initiated successfully.", "cycle_id": cycle_id}
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        raise HTTPException(status_code=500, detail=f"An error occurred during the improvement cycle. Cycle ID: {cycle_id}. Error: {str(e)}")
+```
