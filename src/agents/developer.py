@@ -98,6 +98,9 @@ FILES:
             # Get current file contents
             current_content = self.code_reader.read_file(file_path)
             
+            # Remove ` characters from file_path if they exist at start or end
+            file_path = file_path.strip('`')
+            
             # Format the prompt for this file
             prompt = f"""Based on the following pull request details and current file contents, 
 update the file to implement the requested changes.
@@ -110,10 +113,19 @@ Current file contents:
 {current_content}
 
 Please provide the complete updated file contents, maintaining the same file structure and format.
-For each file, return ONLY the complete code that should replace the existing file. Do not include any explanations, comments about the changes, or markdown formatting."""
+For each file, return ONLY the complete code that should replace the existing file. Do not include any explanations, comments about the changes, or markdown formatting. Strictly no markdown formatting."""
             
             # Get the updated file contents
             updated_content = self.generate_response(prompt)
+            
+            # Remove lines that start with ``` at beginning or end
+            lines = updated_content.split('\n')
+            while lines and lines[0].strip().startswith('```'):
+                lines.pop(0)
+            while lines and lines[-1].strip().startswith('```'):
+                lines.pop()
+            updated_content = '\n'.join(lines)
+            
             changes[file_path] = updated_content
         
         return changes, title, description

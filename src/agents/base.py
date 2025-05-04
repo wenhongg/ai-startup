@@ -64,7 +64,13 @@ class BaseAgent:
             response = self.model.generate_content(formatted_prompt)
             
             if response and response.text:
-                return response.text
+                # Split response into lines and remove lines that start with ``` at beginning or end
+                lines = response.text.split('\n')
+                while lines and lines[0].strip().startswith('```'):
+                    lines.pop(0)
+                while lines and lines[-1].strip().startswith('```'):
+                    lines.pop()
+                return '\n'.join(lines)
             else:
                 raise Exception("No response generated")
                 

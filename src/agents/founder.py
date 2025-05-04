@@ -28,8 +28,7 @@ class FounderAI(BaseAgent):
 Product Information:
 {product_summaries}
 
-Based on the above information, please analyze the current state and propose improvements.
-Focus on a small area to improve, and make sure it's something that will be useful to the user."""
+Based on the above information, please analyze the current state and propose a single improvement and elaborate on it."""
 
         proposal = self.generate_response(prompt=prompt)
         self._cached_proposal = proposal
