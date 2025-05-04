@@ -1,9 +1,9 @@
-from typing import Dict, Any, List
+```python
+from typing import Dict, Any, List, Optional
 import logging
 from datetime import datetime
 import os
-
-# TODO: Not in use
+import json
 
 class Observability:
     def __init__(self):
@@ -89,7 +89,86 @@ class Observability:
         self.cycle_data["end_time"] = datetime.now()
         self.cycle_data["status"] = status
         self.logger.info(f"Ended improvement cycle with status: {status}")
+        self._save_cycle_data()
     
+    def _save_cycle_data(self):
+        """Saves the current cycle data to a JSON file."""
+        filename = self._get_log_filename("cycle_data")
+        try:
+            with open(filename, "w") as f:
+                json.dump(self.cycle_data, f, indent=4, default=str)
+            self.logger.info(f"Saved cycle data to {filename}")
+        except Exception as e:
+            self.logger.error(f"Error saving cycle data: {e}")
+
+    def _load_cycle_data(self, filename: str) -> Optional[Dict[str, Any]]:
+        """Loads cycle data from a JSON file."""
+        try:
+            with open(filename, "r") as f:
+                return json.load(f)
+        except FileNotFoundError:
+            self.logger.warning(f"Cycle data file not found: {filename}")
+            return None
+        except json.JSONDecodeError as e:
+            self.logger.error(f"Error decoding JSON from {filename}: {e}")
+            return None
+        except Exception as e:
+            self.logger.error(f"Error loading cycle data from {filename}: {e}")
+            return None
+    
+    def get_cycle_status(self) -> Dict[str, Any]:
+        """Returns the current cycle status."""
+        if not self.cycle_data["start_time"]:
+            return {"status": "idle"}
+
+        status = self.cycle_data["status"] or "running"
+        phase = None
+        if self.cycle_data["analysis"] and not self.cycle_data["proposal"]:
+            phase = "analyzing"
+        elif self.cycle_data["proposal"] and not self.cycle_data["implementation_plan"]:
+            phase = "proposing"
+        elif self.cycle_data["implementation_plan"] and not self.cycle_data["changes"]:
+            phase = "implementing"
+        elif self.cycle_data["changes"] and not self.cycle_data["end_time"]:
+            phase = "reviewing"
+
+        cycle_status: Dict[str, Any] = {"status": status}
+        if phase:
+            cycle_status["phase"] = phase
+        
+        if status in ("completed", "failed"):
+            cycle_status["start_time"] = self.cycle_data["start_time"]
+            cycle_status["end_time"] = self.cycle_data["end_time"]
+            if status == "failed":
+                cycle_status["failure_details"] = self.cycle_data.get("failure_details", "No details available")
+            else:
+                cycle_status["summary"] = self.get_cycle_summary()
+
+        return cycle_status
+    
+    def get_cycle_history(self, limit: int = 20) -> List[Dict[str, Any]]:
+        """Returns a list of completed improvement cycles."""
+        history = []
+        log_files = [f for f in os.listdir(self.logs_dir) if f.startswith("cycle_data_")]
+        log_files.sort(reverse=True)  # Sort by date, newest first
+        
+        for log_file in log_files[:limit]:
+            file_path = os.path.join(self.logs_dir, log_file)
+            cycle_data = self._load_cycle_data(file_path)
+            if cycle_data:
+                summary = ""
+                if cycle_data["status"] == "completed":
+                    summary = "Cycle completed successfully."
+                elif cycle_data["status"] == "failed":
+                    summary = "Cycle failed."
+                history.append({
+                    "start_time": cycle_data["start_time"],
+                    "end_time": cycle_data["end_time"],
+                    "status": cycle_data["status"],
+                    "summary": summary
+                })
+        return history
+
     def get_cycle_summary(self) -> str:
         """Generate a detailed summary of the improvement cycle"""
         if not self.cycle_data["start_time"]:
@@ -132,4 +211,5 @@ class Observability:
                 for file_path in attempt["changes"].keys():
                     summary.append(f"  - {file_path}")
         
-        return "\n".join(summary) 
+        return "\n".join(summary)
+```
