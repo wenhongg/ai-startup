@@ -1,9 +1,11 @@
+```python
 """
 Configuration settings for the application.
 """
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
+from typing import List, Tuple
 
 class Settings(BaseSettings):
     """Application settings."""
@@ -35,6 +37,11 @@ class Settings(BaseSettings):
     # System Configuration
     environment: str = Field(default="development", validation_alias="ENVIRONMENT")
     
+    # Safety Checker Configuration
+    protected_files: List[str] = Field(default=[], validation_alias="PROTECTED_FILES")
+    ai_maintained_files: List[str] = Field(default=[], validation_alias="AI_MAINTAINED_FILES")
+    protected_patterns: List[Tuple[str, str]] = Field(default=[], validation_alias="PROTECTED_PATTERNS")
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -48,4 +55,5 @@ settings = Settings()
 # If you have an extra field in your .env file like:
 # CUSTOM_FIELD=some_value
 # You can access it with:
-# custom_value = settings.get_extra_field("CUSTOM_FIELD", "default_value") 
+# custom_value = settings.get_extra_field("CUSTOM_FIELD", "default_value")
+```
