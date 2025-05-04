@@ -1,9 +1,9 @@
-from typing import Dict, Any, List
+```python
+from typing import Dict, Any, List, Optional
 import logging
 from datetime import datetime
 import os
-
-# TODO: Not in use
+import json
 
 class Observability:
     def __init__(self):
@@ -132,4 +132,37 @@ class Observability:
                 for file_path in attempt["changes"].keys():
                     summary.append(f"  - {file_path}")
         
-        return "\n".join(summary) 
+        return "\n".join(summary)
+    
+    def get_cycle_report(self, cycle_id: int) -> Optional[Dict[str, Any]]:
+        """
+        Retrieves and formats the improvement cycle report.
+        In a real implementation, this method would fetch cycle data from storage.
+        """
+        if cycle_id < 0:
+            return None # or raise an exception
+        
+        if not self.cycle_data["start_time"]:
+            return None
+        
+        report = {
+            "cycle_id": cycle_id,
+            "start_time": self.cycle_data["start_time"].isoformat() if self.cycle_data["start_time"] else None,
+            "end_time": self.cycle_data["end_time"].isoformat() if self.cycle_data["end_time"] else None,
+            "status": self.cycle_data["status"],
+            "analysis": self.cycle_data["analysis"],
+            "proposal": self.cycle_data["proposal"],
+            "implementation_plan": self.cycle_data["implementation_plan"],
+            "changes": self.cycle_data["changes"],
+            "fix_attempts": []
+        }
+
+        for attempt in self.cycle_data["fix_attempts"]:
+            report["fix_attempts"].append({
+                "timestamp": attempt["timestamp"].isoformat(),
+                "issues": attempt["issues"],
+                "changes": attempt["changes"]
+            })
+        
+        return report
+```
