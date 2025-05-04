@@ -1,0 +1,108 @@
+```python
+import unittest
+from unittest.mock import patch, MagicMock
+from src.founder_ai import FounderAI
+from src.code_reader import CodeReader
+from src.models.proposal import Proposal, ProposalValidationError
+from typing import Dict, List, Tuple
+
+class TestFounderAI(unittest.TestCase):
+
+    @patch('src.founder_ai.get_llm_response')
+    @patch('src.code_reader.CodeReader.summarize')
+    def test_generate_proposal_success(self, mock_summarize, mock_get_llm_response):
+        # Mock CodeReader summary
+        mock_summarize.return_value = "Code Summary"
+
+        # Mock LLM response (structured output)
+        llm_response = """
+Area for Improvement: Improve logging
+Rationale: Improved logging will aid in debugging and monitoring system behavior.
+Suggested Changes: Implement structured logging with timestamps, severity levels, and context information. Use the Python 'logging' module.
+Risks: Incorrect logging configuration could lead to excessive log file sizes.
+Effort Level: Medium
+"""
+        mock_get_llm_response.return_value = llm_response
+
+        # Instantiate FounderAI
+        founder_ai = FounderAI(code_reader=CodeReader())
+
+        # Generate proposal
+        proposal = founder_ai.generate_proposal("some_file.py", "python")
+
+        # Assertions
+        self.assertIsInstance(proposal, Proposal)
+        self.assertEqual(proposal.area_for_improvement, "Improve logging")
+        self.assertEqual(proposal.rationale, "Improved logging will aid in debugging and monitoring system behavior.")
+        self.assertEqual(proposal.suggested_changes, "Implement structured logging with timestamps, severity levels, and context information. Use the Python 'logging' module.")
+        self.assertEqual(proposal.risks, "Incorrect logging configuration could lead to excessive log file sizes.")
+        self.assertEqual(proposal.effort_level, "Medium")
+
+        # Assert code reader was called with the right arguments
+        mock_summarize.assert_called_once_with("some_file.py", "python")
+
+    @patch('src.founder_ai.get_llm_response')
+    @patch('src.code_reader.CodeReader.summarize')
+    def test_generate_proposal_parsing_failure(self, mock_summarize, mock_get_llm_response):
+        # Mock CodeReader summary
+        mock_summarize.return_value = "Code Summary"
+
+        # Mock LLM response (unstructured output)
+        llm_response = "This is not a valid proposal format."
+        mock_get_llm_response.return_value = llm_response
+
+        # Instantiate FounderAI
+        founder_ai = FounderAI(code_reader=CodeReader())
+
+        # Generate proposal
+        with self.assertRaises(ProposalValidationError):
+            founder_ai.generate_proposal("some_file.py", "python")
+
+    @patch('src.founder_ai.get_llm_response')
+    @patch('src.code_reader.CodeReader.summarize')
+    def test_generate_proposal_llm_error(self, mock_summarize, mock_get_llm_response):
+        # Mock CodeReader summary
+        mock_summarize.return_value = "Code Summary"
+
+        # Mock LLM response (error)
+        mock_get_llm_response.side_effect = Exception("LLM Error")
+
+        # Instantiate FounderAI
+        founder_ai = FounderAI(code_reader=CodeReader())
+
+        # Generate proposal
+        with self.assertRaises(Exception) as context:
+            founder_ai.generate_proposal("some_file.py", "python")
+
+        self.assertEqual(str(context.exception), "LLM Error")
+        
+    @patch('src.founder_ai.get_llm_response')
+    @patch('src.code_reader.CodeReader.summarize')
+    def test_generate_proposal_with_empty_fields(self, mock_summarize, mock_get_llm_response):
+        # Mock CodeReader summary
+        mock_summarize.return_value = "Code Summary"
+
+        # Mock LLM response (with empty fields)
+        llm_response = """
+Area for Improvement: Improve logging
+Rationale: 
+Suggested Changes: 
+Risks: 
+Effort Level: 
+"""
+        mock_get_llm_response.return_value = llm_response
+
+        # Instantiate FounderAI
+        founder_ai = FounderAI(code_reader=CodeReader())
+
+        # Generate proposal - should still work but fields might be empty strings or None
+        proposal = founder_ai.generate_proposal("some_file.py", "python")
+
+        # Assertions
+        self.assertIsInstance(proposal, Proposal)
+        self.assertEqual(proposal.area_for_improvement, "Improve logging")
+        self.assertEqual(proposal.rationale, "")
+        self.assertEqual(proposal.suggested_changes, "")
+        self.assertEqual(proposal.risks, "")
+        self.assertEqual(proposal.effort_level, "")
+```
