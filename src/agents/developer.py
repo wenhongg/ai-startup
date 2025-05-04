@@ -105,10 +105,12 @@ update the file to implement the requested changes.
 Pull Request Title: {title}
 Pull Request Description: {description}
 
+Current filename: {file_path}
 Current file contents:
 {current_content}
 
-Please provide the complete updated file contents, maintaining the same file structure and format."""
+Please provide the complete updated file contents, maintaining the same file structure and format.
+For each file, return ONLY the complete code that should replace the existing file. Do not include any explanations, comments about the changes, or markdown formatting."""
             
             # Get the updated file contents
             updated_content = self.generate_response(prompt)
