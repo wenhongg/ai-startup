@@ -1,0 +1,72 @@
+```python
+import unittest
+from src.models.proposal import Proposal, parse_proposal
+from typing import Dict, List
+
+class TestProposal(unittest.TestCase):
+
+    def test_parse_proposal_valid(self):
+        proposal_text = """
+Area for Improvement: Improve logging
+Rationale: Improved logging will aid in debugging and monitoring system behavior, leading to faster resolution of issues and increased system stability.
+Suggested Changes: Implement structured logging with timestamps, severity levels, and context information. Use a logging library like the Python `logging` module and configure it to write logs to both the console and a file.
+Risks: Incorrect logging configuration could lead to excessive log file sizes or sensitive information exposure.
+Effort Level: Medium
+"""
+        expected_proposal = Proposal(
+            area_for_improvement="Improve logging",
+            rationale="Improved logging will aid in debugging and monitoring system behavior, leading to faster resolution of issues and increased system stability.",
+            suggested_changes="Implement structured logging with timestamps, severity levels, and context information. Use a logging library like the Python `logging` module and configure it to write logs to both the console and a file.",
+            risks="Incorrect logging configuration could lead to excessive log file sizes or sensitive information exposure.",
+            effort_level="Medium"
+        )
+        parsed_proposal = parse_proposal(proposal_text)
+        self.assertEqual(parsed_proposal, expected_proposal)
+
+
+    def test_parse_proposal_missing_fields(self):
+        proposal_text = """
+Area for Improvement: Improve logging
+Rationale: Improved logging will aid in debugging.
+Suggested Changes: Use a logging library.
+"""
+        with self.assertRaises(ValueError):
+            parse_proposal(proposal_text)
+
+    def test_parse_proposal_extra_whitespace(self):
+         proposal_text = """
+Area for Improvement:   Improve logging  
+Rationale:   Improved logging will aid in debugging.  
+Suggested Changes:   Use a logging library.  
+Risks:   Some Risks.
+Effort Level:   Medium  
+"""
+         expected_proposal = Proposal(
+            area_for_improvement="Improve logging",
+            rationale="Improved logging will aid in debugging.",
+            suggested_changes="Use a logging library.",
+            risks="Some Risks",
+            effort_level="Medium"
+        )
+         parsed_proposal = parse_proposal(proposal_text)
+         self.assertEqual(parsed_proposal, expected_proposal)
+
+    def test_parse_proposal_different_formatting(self):
+        proposal_text = """
+Area for Improvement: Improve logging.
+Rationale: Because we need better logs.
+Suggested Changes: Add more logs.
+Risks: Possible performance impact.
+Effort Level: High
+"""
+        expected_proposal = Proposal(
+            area_for_improvement="Improve logging.",
+            rationale="Because we need better logs.",
+            suggested_changes="Add more logs.",
+            risks="Possible performance impact.",
+            effort_level="High"
+        )
+
+        parsed_proposal = parse_proposal(proposal_text)
+        self.assertEqual(parsed_proposal, expected_proposal)
+```
